@@ -50,8 +50,7 @@ formatTable <- function(Table, name, repeater, alpha, minentry) {
   k = 1
   while (k < length(Table[, 1])) {
     xx1 <-
-      tab_style(xx1, cell_fill(color = "white"), locations = cells_body(rows =
-                                                                          k))
+      tab_style(xx1, cell_fill(color = "white"), locations = cells_body(rows =k))
     k = k + length(repeater) + 1
   }
   #write out
@@ -89,6 +88,8 @@ formatTable <- function(Table, name, repeater, alpha, minentry) {
 #' costs = vector of expected costs for sinle level tests, multilevel and optimal
 #' R2 - true effect in treatment group in current calculation with dichotomous scenario
 #' P - prevalence in current computation in dichotomous scenario
+#' EM -  mean of effect distribution in current computation cts scenario
+#' v -  sd of effect distribution in current computation cts scenario
 #' minentry - vector of positions of lowest cost alphas for each scenario setting
 #' row - row in Table
 
@@ -99,7 +100,7 @@ Table_1_2 <- function(
       sample = 1000, # group sample sizes, assuming equal groups
       PP = c(.5, .1),#prevalence, dichotomous scenarios
       MM = c(0, -.02), # mean of effect distribution in continuous scenarios
-      vv = c(.01, .03), #  SD of effect distribution in continuous scenarios
+      vv = c(.015, .025), #  SD of effect distribution in continuous scenarios
       cd = 707, #cost of drug per person
       C = 40000 # av. cost of hospital stay
     ) {
@@ -128,8 +129,8 @@ Table_1_2 <- function(
         integrate(ttt2, .00001, R1 - onetwo, stop.on.error = F)$value #only get false negatives if below cut off
       II[i] <<-
         (I2 + integrate(ttt1, R1 - onetwo, 1, stop.on.error = F)$value) # only get false positives afterward
-    }
-    
+    if (i < 4) print(c(z[i],II[i]-I2,I2))}
+    print(c(sd2,p1))
     return(II[1:length(z)])
   }
   
@@ -137,19 +138,26 @@ Table_1_2 <- function(
   #eh is the risk of hospitalization in treatment group
   
   ttt1 <- function(eh) {
-    dnorm(eh - R1, M, v) * C * onetwo * pnorm(zalp, (eh - R1)/sd, 1)
+    p2 = eh * (1 - eh) #sd of sample distribution at eh
+    sd=sqrt((p1+p2)/sample)
+    dnorm(eh - R1, EM, v) * C*onetwo*pnorm((zalp*sd2 -eh + R1 -onetwo)/ sd,0,1)
   }
   
   ttt2 <- function(eh) {
     p2 = eh * (1 - eh) #sd of sample distribution at eh
-    factor = max(0, R1 - eh - onetwo) # cost weight
-    dnorm(eh - R1, M, v) * C * factor * (1 - pnorm(zalp, (eh - R1)/sd, 1))
+    factor =  R1 - eh - onetwo # cost weight
+    sd=sqrt((p1+p2)/sample)
+    dnorm(eh - R1, EM, v) *  C*factor * (1-pnorm((zalp*sd2 -eh + R1-onetwo)/ sd,0,1))
   }
   
   
   ########################
+  p1 = (1 - R1) * R1 #sample distribution variance of untreated risk
+  p22=(1-R1+onetwo)*(R1-onetwo) # sample distribution of treated risk if this is R1-onetwo
+  sd2=sqrt((p1+p22)/sample)
   # start computations for dichotomous scenario
   row = 0 #start rows for dichotomous table
+
   for (R2 in R22) {
     #vector of true effects
     # insert scenario risk difference  into table
@@ -162,21 +170,20 @@ Table_1_2 <- function(
     row = row + 1
     for (P in PP) {
       #prevalence loop
-      p1 = (1 - R1) * R1 #sample distribution variance of untreated risk
-      p2 = (1 - R2) * R2 #sample distribution variance of treated risk
+      p2 = (1 - R2) * R2 #sample distribution variance if  treated risk = R2
       factor = R1 - R2 - onetwo
       sd = sqrt((p1+p2)/sample)
       zalp= qnorm(alpha, 0, 1)
       # sum type I and type II error costs; the latter
       costs[1:n] = (1-P) * onetwo * C * alpha + P * C * factor * (1 -
-                                                                      pnorm(zalp, -factor/sd, 1)) # single level tests
+                                                                      pnorm((zalp*sd2+factor)/sd, 0,1)) # single level tests
       costs[n + 1] = sum(costs[1:n] * ccc) / C # multilevel
       #now find optimal by searching alpha space for minimum of single level tests
       opt2 = rep(0, 3000)
       a = .0001
       jj = 1:10000
       zalp = qnorm(jj * a, 0, 1)
-      opt2 = (1-P) * onetwo * C * jj * a + P * C * factor * (1 - pnorm(zalp,-factor/sd,1))
+      opt2 = (1-P) * onetwo * C * jj * a + P * C * factor * (1 - pnorm(zalp*sd2,-factor,sd))
       costs[n + 2] = min(opt2)
       optim = round(a * which.min(opt2), 2)
       if (optim == 0)
@@ -200,7 +207,7 @@ Table_1_2 <- function(
   #  cts scenario
   row = 0
   minentry = 100 * 0
-  for (M in MM) {
+  for (EM in MM) {
     #mean of true effect distribution
     row = row + 1
     # insert scenario effect size distribution mean into table
@@ -209,10 +216,9 @@ Table_1_2 <- function(
       nrow = 1,
       ncol = n + 3
     ))
-    Table2[length(Table2[, 1]), 1] = paste0("m = ", M)
+    Table2[length(Table2[, 1]), 1] = paste0("m = ", EM)
     ## loop over variance of true effect distribution
     for (v in vv) {
-      p1 = (1 - R1) * R1 #sample distribution variance of untreated risk
       # compute  integrals of costs over effect size distribution in research scenario
       # costs for single alpha tests
       costs[1:n] = Integrate(qnorm(alpha, 0, 1)) # costs
@@ -238,10 +244,8 @@ Table_1_2 <- function(
     }  # end of variance loop
   } # end of loop over research distribution mean
   #output Table
-  formatTable(Table2, "Table2", MM, alpha, minentry)
+  formatTable(Table2, "Table2", vv, alpha, minentry)
 }
-
-
 
 
 ####################################################
@@ -284,16 +288,16 @@ Table_3_4 <- function(alpha=c(.025,.0025), noit=2000, SS=c(12,96), PP=c(.5,.1), 
   
   #Functions to perform integration over effect sizes in a continuous research scenario
 
-  Integrate<-function(){
+  IntegrateSim<-function(){
   
-    I1=integrate(ttt1,-10,M)$value #only get false positives if below cut off
-    I2=integrate(ttt2,M,10)$value # only get false negatives afterwards
+    I1=integrate(Type1,-10,M)$value #only get false positives if below cut off
+    I2=integrate(Type2,M,10)$value # only get false negatives afterwards
     return(c(I1,I2))}
   
-  ttt1 <- function(ee) {
+  Type1 <- function(ee) {
     dnorm(ee,EM,v)*(1-pt(cutoff+(M-ee)*forSE,df))
   }
-  ttt2 <- function(ee) {  
+  Type2 <- function(ee) {  
     dnorm(ee,EM,v)*pt(cutoff-(ee-M)*forSE,df)
   }
   
@@ -323,7 +327,7 @@ Table_3_4 <- function(alpha=c(.025,.0025), noit=2000, SS=c(12,96), PP=c(.5,.1), 
     row = row + 1
     for (P in PP) {
       #prevalence loop
-      for (sample in SS){ #loop for sample size
+      for (sample in SS){ #loop for group sample size
       df<-2*sample-2
       dd = d*sqrt(sample/2)
       cutoff = qt(1-alpha, df)
@@ -351,7 +355,7 @@ Table_3_4 <- function(alpha=c(.025,.0025), noit=2000, SS=c(12,96), PP=c(.5,.1), 
       sum=sum/noit
       sumsq=round(sqrt(sumsq/noit-sum*sum),1)
       # add entry into tables
-      rowname = paste0("P=", round(1 - P, 2),", n=", sample*2) # paste prevalence and sample size into table
+      rowname = paste0("P=", round(P, 2),", n=", sample*2) # paste prevalence and sample size into table
       Table3 = rbind(Table3, c(rowname, paste0(
         formattable(sum, format = "f", digits = 1)," (",sumsq,")")))
       
@@ -395,7 +399,7 @@ Table_3_4 <- function(alpha=c(.025,.0025), noit=2000, SS=c(12,96), PP=c(.5,.1), 
           for (j in 1:n) {
             alp=alpha[j]
             cutoff=qt(1-alp,df)
-            I=Integrate()
+            I=IntegrateSim()
             costs[j]=rC[3,n]*I[1]+rC[4,n]*I[2] #single level tests
             costs[n+1]=costs[n+1] + rC[1,j]*I[1]+rC[2,j]*I[2]# multilevel test error costs
             }
@@ -406,7 +410,7 @@ Table_3_4 <- function(alpha=c(.025,.0025), noit=2000, SS=c(12,96), PP=c(.5,.1), 
           for (j in 1:optdel) {
             alp=a*j
             cutoff=qt(1-alp,df)
-            I=Integrate()
+            I=IntegrateSim()
             opt[j]=rC[3,n]*I[1]+rC[4,n]*I[2]
           }
           costs[n+2]=opt[which.min(opt)]
@@ -436,7 +440,7 @@ Table_3_4 <- function(alpha=c(.025,.0025), noit=2000, SS=c(12,96), PP=c(.5,.1), 
 
 ###################################################################
 
-#functions to output Figure 1a and b in paper
+#functions to output Appendix Figure 1a and b 
 #' @param R1 = risk in untreated group
 Fig1a <- function(R1 = 0.092)
 {
@@ -464,7 +468,7 @@ Fig1a <- function(R1 = 0.092)
   )
   ee = -.03
   sd=sqrt(((1-R1)*R1 +(1-ee-R1)*(ee+R1)) / sample)
-  cutoff = qnorm(.26, M, sd) #cutoff at alpha=.62
+  cutoff = qnorm(.23, M, sd) #cutoff at alpha=.62
   lines(c(cutoff, cutoff), c(0, ytop))
   cutoff = qnorm(.05, M, sd) #cutoff at 0.05
   lines(c(cutoff, cutoff), c(0, ytop), lty = "dotted")
@@ -473,17 +477,16 @@ Fig1a <- function(R1 = 0.092)
 }
 ########################################################
 #' @param R1 = risk in untreated group
-Fig1b <- function(R1 = 0.092)
+Fig1b <- function(R1 = 0.092,EM=c(0,-.02),vv=c(0.015,0.025))
 {
   type = "l"
-  ee = -.018
-  sample = 1000
-  sqs = sqrt(sample)
+  onetwo = 707/40000
   ytop = 40
   px = (-100:100) * .001 # difference in cases
+  py=px
   plot(
     px,
-    dnorm(px, 0, .03),
+    dnorm(px, EM[1], vv[1]),
     type = type,
     xlim = c(-.1, .1),
     ylab = "",
@@ -494,16 +497,18 @@ Fig1b <- function(R1 = 0.092)
     lwd = 2,
     lty = "dashed"
   ) #research scenario 2
-  lines(px, dnorm(px,-.02, .01), lwd = 2) #research scenario 2
+  for (i in 1:length(px))py[i]=max(-.092,dnorm(px,EM[2], vv[2])[i])
+  
+  lines(px, py, lwd = 2) #research scenario 2
   lines(c(-.1, .1), c(0, 0), lwd = 1)
   lines(c(-onetwo, -onetwo), c(0, ytop))
 }
 #################################################################
-#functions to output Appendix Figures 1a and b
+#functions to output Appendix Figures 2a and b
 #' @param sample = group size
 #' @param ytop = upper limit of y axis displayed
 #' 
-AppendFig1 <- function(sample= 6,ytop=1)
+Fig2 <- function(sample= 6,ytop=1)
 {
   type="l"
   M=.64
@@ -535,3 +540,18 @@ AppendFig1 <- function(sample= 6,ytop=1)
          lty=c(1,1,3,2,2),lwd=c(1.5,1,1,1,.5),cex=.65,bty="n")
   }
 
+#sample size calculation
+R1=.092
+R2=.044
+onetwo=707/40000
+factor=R1-R2-onetwo
+np1=(1-R1)*R1
+np2=(1-R2)*R2
+np22=(1-R1+onetwo)*(R1-onetwo)
+nsd=sqrt(np1+np2)
+nsd2=sqrt(np1+np22)
+za=qnorm(.05,0,1);zb=qnorm(.2,0,1)
+((za*nsd2+zb*nsd)/(factor))^2
+
+ 
+    
