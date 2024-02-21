@@ -1,6 +1,5 @@
-#' Contains functions to produce Tables and Figures in the paper "An alternative to chasing an elusive alpha that minimizes ill-defined error costs:
-#'  simultaneously test a hypothesis at multiple alpha levels" by J Aisbett
-
+#' @title Contains functions to produce Tables and Figures in the paper (and its supporting material) by J Aisbett titled
+#' "Can expected error costs justify testing a hypothesis at multiple alpha levels rather than searching for an elusive optimal alpha?"
 
 require(gt)
 require(formattable)
@@ -8,7 +7,7 @@ require(gtExtras)
 require(tibble)
 chromote::default_chromote_object()
 
-#'formatTable() is a function to format tables as in the paper and write out into current directory
+#' @description formatTable() is a function to format tables as in the paper and write out into current directory
 #' @param Table is matrix input
 #' @param name is the name used for the output word document i.e. name.docx
 #' @param repeater defines groups of entries in final table
@@ -60,7 +59,7 @@ formatTable <- function(Table, name, repeater, alpha, minentry,n) {
 }
 
 ############################################################
-#' Table_1_2 is a function to compute expected total error costs of risk difference tests given two equal groups,
+#' @description Table_1_2 is a function to compute expected total error costs of risk difference tests given two equal groups,
 #' at different alpha levels and at simultaneously multiple levels.
 #' Output contains Table 1 and Table 2 of the paper. Details of the computations are in that paper
 
@@ -86,7 +85,7 @@ formatTable <- function(Table, name, repeater, alpha, minentry,n) {
 #' P - prevalence in current computation in dichotomous scenario
 #' EM -  mean of effect distribution in current computation cts scenario
 #' v -  sd of effect distribution in current computation cts scenario
-#' CDiff = difference between costs at adjacent test levels in multi-level tests 
+#' CDiff = difference between costs at adjacent test levels in multi-level tests
 #'        (assuming costs are propertional to surprisal values)
 #' minentry - vector of positions of lowest cost alphas for each scenario setting
 #' row - row in Table
@@ -117,8 +116,8 @@ Table_1_2 <- function(
   row = 0
   costs = rep(0, n + 2) # will contain expected costs
   II <<- rep(0, n) # will contain total error costs  in cts scenarios
-  
-  
+
+
   #Functions to perform integration over effect sizes in a continuous research scenario
   IntegrateCts <- function(z) {
     for (i in 1:length(z)) {
@@ -130,29 +129,29 @@ Table_1_2 <- function(
     }
     return(II[1:length(z)])
   }
-  
+
   #functions to compute Type I and Type II errors in continuous research scenarios
   #eh is the risk of hospitalization in treatment group
-  
+
   ttt1 <- function(eh) {
     p2 = eh * (1 - eh) #sd of sample distribution at eh
     sd=sqrt((p1+p2)/sample)
     dnorm(eh - R1, EM, v) * C*onetwo*pnorm((zalp*sd2 -eh + R1 -onetwo)/ sd,0,1)
   }
-  
+
   ttt2 <- function(eh) {
     p2 = eh * (1 - eh) #sd of sample distribution at eh
     factor =  R1 - eh - onetwo # cost weight
     sd=sqrt((p1+p2)/sample)
     dnorm(eh - R1, EM, v) *  C*factor * (1-pnorm((zalp*sd2 -eh + R1-onetwo)/ sd,0,1))
   }
-  
-  
+
+
   #######
   p1 = (1 - R1) * R1 #sample distribution variance of untreated risk
   p22=(1-R1+onetwo)*(R1-onetwo) # sample distribution of treated risk if this is R1-onetwo
   sd2=sqrt((p1+p22)/sample)
-  
+
   # start computations for dichotomous scenario
   row = 0 #start rows for dichotomous table
   # loop for vector of true effects
@@ -196,8 +195,8 @@ Table_1_2 <- function(
   } #end true effect loop
   #output results
   formatTable(Table1, "Table1", R22, alpha, minentry,n)
-  
-  
+
+
   #  computations for cts scenario
   row = 0
   minentry = 100 * 0
@@ -237,45 +236,45 @@ Table_1_2 <- function(
       row = row + 1
     }  # end of variance loop
   } # end of loop over research distribution mean
-  
+
   #output and output Table
   formatTable(Table2, "Table2", vv, alpha, minentry,n)
 } # end of function Table_1_2
 
   ############################################################
-  #' Table_3 is a function to compute averaged expected total error costs of superiority t-tests given two equal groups,
+  #' @description Table_3 is a function to compute averaged expected total error costs of superiority t-tests given two equal groups,
   #' at different alpha levels and at simultaneously multiple levels.
   #' The averages are over the distribution of anticipated standardized effect size of different research teams
   #' in the research scenario, which is assumed to be normal.
   #' Output contains Table 3 of the paper. Details of the computations are in that paper
   #' Prevalence of true findings is modelled with normal distributions of standardized effect sizes in the research environment
   #' Word document Table3 is output into current directory.
-  
+
   #' @param alpha alphas in decreasing order
-  #' @param aa vector of means of true effect size distributions 
-  #' @param sd1 standard deviation of true effect size distributions 
+  #' @param aa vector of means of true effect size distributions
+  #' @param sd1 standard deviation of true effect size distributions
   #' @param D mean of distrution of anticipated effect sizes
-  #' @param sd2 standard deviation of anticipated effect size distributions 
-  #' @param cR vector of cost ratios between Type I and Type II errors.   
+  #' @param sd2 standard deviation of anticipated effect size distributions
+  #' @param cR vector of cost ratios between Type I and Type II errors.
   #'
   #' n= group sample size (assuming equal groups)
   #' a = current true distribution mean
   #' cRatio = current Type I to Type II error cost ratio
-  #' CDiff = difference between costs at adjacent test levels in multi-level tests 
+  #' CDiff = difference between costs at adjacent test levels in multi-level tests
   #'        (assuming costs are propertional to surprisal values)
   #' minentry - vector of positions of lowest cost alphas for each scenario setting
   #' row - row in Table
-  
+
 
  Table_3<- function(alpha=c(.25,.025),aa=c(-.1,0,.4),sig1=.2,D=.4,sig2=.1,cR=c(10,4,1))
   {
-    
+
     Table = matrix(nrow = 0, ncol = length(alpha) + 3)
     #########################
-    # Type1 (resp Type2) is function to compute Type I (resp. Type II) errors 
+    # Type1 (resp Type2) is function to compute Type I (resp. Type II) errors
     # given effect size e, group size n and true distribution mean a
-    
-    Type1<-function(e,n){ 
+
+    Type1<-function(e,n){
       #prob assumed d*resulting Type I error
       dnorm(e,a,sig1)*(1-pt(-e*sqrt(n/2)+qt(1-alp,2*n-2),2*n-2))
     }
@@ -285,17 +284,17 @@ Table_1_2 <- function(
     ########################
     # Type1a (resp Type2a) is a function to compute average Type1 (resp. Type 2) error
     # rates over the distribution of anticipated effect sizes which affects group siZe n
-   Type1a<-function(x,n){ 
+   Type1a<-function(x,n){
       n<-as.integer(2*(zj/x)^2)
       dnorm(x,D,sig2)*Integrate(Type1,n,a-4*sig1,0)
     }
-    
+
     Type2a<-function(x,n){
       #prob assumed x*resulting Type II error
       n<-as.integer(2*(zj/x)^2)
       dnorm(x,D,sig2)*Integrate(Type2,n,0,a+4*sig1)
     }
-    
+
     Integrate <- function(f, n,lower, upper)
     {ff<-function(e){f(e,n)}
       integrate(ff,lower,upper,stop.on.error=F)$value
@@ -307,18 +306,18 @@ Table_1_2 <- function(
     # compute cost weights for multi-level case
     CDiff=rep(log2(alpha[1])/log2(alpha[length(alpha)]),length(alpha))
     for (j in 2:length(alpha)) CDiff[j]=(log2(alpha[j])-log2(alpha[j-1]))/log2(alpha[length(alpha)])
-    
+
     TC1=rep(0, length(alpha))
     TC2=TC1
     # all research teams are assumed to set sample sizes to achieve 80% power at most stringent alpha
     zj<-qnorm(1-alpha[length(alpha)],0,1)+qnorm(.8,0,1)
-    
+
     # start loop for different cost ratios
     for (cRatio in cR)
       {Table = rbind(Table, matrix(data = " ",nrow = 1, ncol = length(alpha) + 3))
       Table[length(Table[, 1]), 1] = paste0("cost ratio = ", cRatio)
       row = row + 1
-     # start loop for different means of the true effect size distribution 
+     # start loop for different means of the true effect size distribution
       for (a in aa)
         { rowname= "true mean = M" # rowname is entry in column 1
         if (a >0) rowname=paste0("true mean = M + ",a)
@@ -346,30 +345,30 @@ Table_1_2 <- function(
         row=row+1
       } # end of true mean loop
     }# end of cost ratio loop
-    
+
     formatTable(Table, "Table3", aa, alpha, minentry,length(alpha))
   } # end of function Table_3
-  
+
 
   #############################################################
-#' Tables_S3 is a function to compute expected average total error costs of one sided t-tests given two equal groups,
+#' @description Tables_S3 is a function to compute expected average total error costs of one sided t-tests given two equal groups,
 #' at different alpha levels and at simultaneously multiple levels.
 #' Averages are over multiple runs in which costs are randomly generated. However, the expected ratio of Type I to Type II
 #' costs is a parameter.
 #' #' Prevalence of true findings is modelled using both zero-mean normal distributions and dichotomous distributions of effect sizes in the research environment
-#' 
+#'
 #' Output contains Table S3.1 and Table S3.2 of the paper. (Default alphas produce (b) tables; change for (a) tables.)
 #' Details of the computations are in the paper
 
 
 #' @param alpha # alphas in decreasing order
-#' @param noit - number of iterations 
+#' @param noit - number of iterations
 #' @param SS vector of group sample sizes, assuming equal groups
 #' @param PP vector of prevalence in dichotomous scenarios
 #' @param del vector of difference between "true" and "false" effect sizes in dichotomous scenario
 #' @param MM vector of minimum meaningful effect in continuous scenarios
 #' @param SD vector of SD of effect distribution in continuous scenarios
-#' @param onetwo - on average, the ratio of costs of Type I to Type II errors 
+#' @param onetwo - on average, the ratio of costs of Type I to Type II errors
 #'
 #' n= number of alphas
 #' sample = current group sample size
@@ -380,8 +379,8 @@ Table_1_2 <- function(
 #' EM =mean of true effect distribution in cts scenario (always set to 0 in current code)
 #' minentry = vector of positions of lowest cost alphas for each scenario setting
 #' row = row in Table
-#' 
-Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5,.1), del=c(.15,.5),MM=c(0,.64), SD=c(.5,1), onetwo=4) 
+#'
+Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5,.1), del=c(.15,.5),MM=c(0,.64), SD=c(.5,1), onetwo=4)
   {
   # set up parameters for tests and scenarios
   n <<- length(alpha) # number of alphas
@@ -394,31 +393,31 @@ Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5
   row = 0
   costs = rep(0, n + 2) # will contain expected costs
   EM=0 # mean of true effect distribution in cts scenario
-  
-  
+
+
   #Functions to perform integration over effect sizes in a continuous research scenario
   # EM and v are mean and sd of distribution of true effects
-  #cutoff is qt(1-alp,df) 
+  #cutoff is qt(1-alp,df)
 
   IntegrateSim<-function(){
-  
+
     I1=integrate(Type1,-10,M)$value #only get false positives if below cut off
     I2=integrate(Type2,M,10)$value # only get false negatives afterwards
     return(c(I1,I2))}
-  
+
   Type1 <- function(ee) {
     dnorm(ee,EM,v)*(1-pt(cutoff+(M-ee)*sqrt(sample/2),df))
   }
-  Type2 <- function(ee) {  
+  Type2 <- function(ee) {
     dnorm(ee,EM,v)*pt(cutoff-(ee-M)*sqrt(sample/2),df)
   }
-  
+
   # function to generate costs
   #' @param n number of single level tests = length of alpha
-  #' @param onetwo - on average, the ratio of costs of Type I to Type II errors 
+  #' @param onetwo - on average, the ratio of costs of Type I to Type II errors
   #' Outputs matrix x with rows containing vector of differences in Type I costs between levels,
   #' differences in Type II costs, abs. Type I costs and abs. Type II costs for multi-level tests
-  
+
   randomCosts<- function(n, onetwo){
     cD0=C*runif(n) # difference in costs between alphas
     cD1=C*runif(n)/onetwo
@@ -446,29 +445,29 @@ Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5
     #prevalence loop
     for (P in PP) {
       #loop for group sample size
-      for (sample in SS){ 
+      for (sample in SS){
         df<-2*sample-2
         dd = d*sqrt(sample/2)
         cutoff = qt(1-alpha, df)
         beta=pt(-dd+cutoff,df)
-      
+
       #initialise for iterations
         sum=sumsq=rep(0,n+2)
         for (randomcount in 1:noit)
             { #set random costs
             rC=randomCosts(n,onetwo)
-            
+
             #compute expected costs
             costs[n+1]=sum(rC[1,]*(1-P)*alpha +P*rC[2,]*beta) #multilevel tests
             costs[1:n]=(1-P)*rC[3,n]*alpha+P*rC[4,n]*beta # single level tests
-            
+
              #now find optimal by searching alpha space for minimum of single level tests
             opt = rep(0, 3000)
             a = .0001
             jj = 1:10000
             opt=(1-P)*rC[3,n]*jj*a + P*rC[4,n]*pt(-dd+qt(1-jj*a,df),df)
             costs[n+2]=min(opt)
-            
+
             # add to running sums
             #costs[1:(n+1)]=(costs[1:(n+1)]-costs[n+2])
             sum=sum+costs
@@ -481,17 +480,17 @@ Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5
         rowname = paste0("P=", round(P, 2),", n=", sample*2) # paste prevalence and sample size into table
         Table3.1 = rbind(Table3.1, c(rowname, paste0(
             formattable(sum, format = "f", digits = 1)," (",sumsq,")")))
-      
+
         minentry[row] = which.min(sum[1:n]) # store where minimum cost as this will be bolded in final table
          row = row + 1
         } # end sample size loop
       }# end prevalence loop
     } #end true effect loop
-  
+
   #output results
   formatTable(Table3.1, "Table3.1", c(del,SS), alpha, minentry,n)
-  
-  
+
+
   #  now do cts scenario
   row = 0
   minentry = 100 * 0
@@ -541,7 +540,7 @@ Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5
           sum=sum+costs
           sumsq=sumsq+costs*costs
         } # end of loop for iterations with random costs
-        
+
         sum=sum/noit
         sumsq=round(sqrt(sumsq/noit-sum*sum),1)
 
@@ -549,13 +548,13 @@ Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5
       rowname = paste0("s = ", round(v, 2),", n=", sample*2)# add sd of scenario effect distribution into table
       Table3.2 = rbind(Table3.2, c(rowname, paste0(
         formattable(sum, format = "f", digits = 1)," (",sumsq,")")))
-      
+
       minentry[row] = which.min(costs[1:n]) # store minimum costs from single level tests
       row = row + 1
       } # end of loop for sample size
     }  # end of variance loop
   } # end of loop over  mean
-  
+
   #output Table
   formatTable(Table3.2, "Table3.2", c(MM,SS), alpha, minentry,length(alpha))
 }
@@ -564,12 +563,13 @@ Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5
 
 
 ###################################################################
- 
-  # Code to produce Fig 1
+
+  #' @title Code to produce Fig 1
 #' @param alp = test level
 #' @param a, sig1 = mean and sd of true effect size distribution
 #' @param D, sig2 = mean and sd of anticipated effect size distribution
 #' @param ytop = y axis maximum
+#' @description Fig1(a)
   Fig1a<- function(alp=.025,  a=0, sig1=.2, D=.4,sig2=.1, ytop=4){
   ex=.001*(-1000:1000) # vector of effect sizes
    # First do Fig (a)
@@ -587,22 +587,22 @@ Tables_S3 <- function(alpha=c(.025,.0025,.0005), noit=2000, SS=c(12,96), PP=c(.5
   #put in axis
   lines(c(-1,1),c(0,0),lwd=.5)
   }
-  #  Fig 1(b)
+  #' @description   Fig 1(b)
 Fig1b<- function(alp=.025,  a=0, sig1=.2, D=.4,sig2=.1, ytop=4){
   D=.4
-  d=(1:1000)/1000 # anticipated effect size 
-  
+  d=(1:1000)/1000 # anticipated effect size
+
   # compute corresponding total sample sizes
-  nn=4*((qnorm(1-alp,0,1)+qnorm(.8,0,1))/d[1])^2 
+  nn=4*((qnorm(1-alp,0,1)+qnorm(.8,0,1))/d[1])^2
   for (j in 2:length(d))nn=c(nn, 4*((qnorm(1-alp,0,1)+qnorm(.8,0,1))/d[j])^2)
-  nn=as.integer(nn+1) 
+  nn=as.integer(nn+1)
   # plot sample size as function of anticipated effect size
   xlab=expression(paste("standardized effect size - ", italic("M")))
   plot(d,nn, type="l",xlab=xlab,xlim=c(0,1),ylim=c(0,4000),ylab="total sample size",bty="n")
   lines(d*1000,dnorm(d,D,sig2))
 }
 
-# Fig 1c
+#' @description  Fig 1c
 Fig1c<- function(alp=.025,  a=0, sig1=.2, D=.4,sig2=.1, ytop=4){
   xlab=expression(paste("anticipated standardized effect size - ",italic(M)))
   plot(nn,dnorm(d,D,sig2), type="l",xlab="total sample size",xlim=c(0,2000),ylim=c(0,4),ylab=" ",bty="n")
@@ -610,11 +610,12 @@ Fig1c<- function(alp=.025,  a=0, sig1=.2, D=.4,sig2=.1, ytop=4){
  }
   ####################################
 
-#functions to output supplementary material Figure S4.1a and S4.1b 
+#' @title functions to draw Supplement 4 Figures S4.1a and S4.1b
 #' @param R1 = risk in untreated group
 #' @param sample = group sample size
 #' @param xtop, ytop respective maximum of axis ranges
 #' @param EM, v = vectors of mean and of sd of true distributions
+#' @description FigS4.1(a)
 FigS4a <- function(R1 = 0.092,sample =1000, ytop=40,xtop=.1)
 {
   M=-707/40000 #- cost ratio is boundary of meaningful effects
@@ -625,15 +626,16 @@ FigS4a <- function(R1 = 0.092,sample =1000, ytop=40,xtop=.1)
   plot(px,dn,type = "l",xlab = paste0("risk difference"),xlim = c(-xtop, xtop),
     ylim = c(0, ytop),ylab = " ",main = "",bty = "n",lwd = 2,)
   #critical value at alpha=.62
-  cutoff = qnorm(.23, M, sd) 
+  cutoff = qnorm(.23, M, sd)
   lines(c(cutoff, cutoff), c(0, ytop))
   #critical value at 0.05
-  cutoff = qnorm(.05, M, sd) 
+  cutoff = qnorm(.05, M, sd)
   lines(c(cutoff, cutoff), c(0, ytop), lty = "dashed",lwd=2)
   #axis
   lines(c(-xtop, xtop), c(0, 0), lwd = 1)
 }
 ################
+#' @description FigS4.1(b)
 FigS4b <- function(R1 = 0.092,EM=c(0,-.02),vv=c(0.015,0.025),ytop = 40)
 {
   onetwo = 707/40000
@@ -641,21 +643,22 @@ FigS4b <- function(R1 = 0.092,EM=c(0,-.02),vv=c(0.015,0.025),ytop = 40)
   py=px
   plot(px, dnorm(px, EM[1], vv[1]),type = "l",xlim = c(-.1, .1),
     ylab = "",ylim = c(0, ytop),xlab = "risk difference",main = " ",
-    bty = "n",lwd = 2,lty = "dashed") 
+    bty = "n",lwd = 2,lty = "dashed")
   #research scenario 2
   for (i in 1:length(px))py[i]=max(-R1,dnorm(px,EM[2], vv[2])[i])
-  lines(px, py, lwd = 2) 
+  lines(px, py, lwd = 2)
   #axes
   lines(c(-.1, .1), c(0, 0), lwd = 1)
   lines(c(-onetwo, -onetwo), c(0, ytop))
 }
 #################################################################
-#functions to output Appendix Figures 3.1a and 3.1b
+#' @title functions to output Supplement 3 Figures S3.1a and S3.1b
 
 #' @param sample = group size (default has to be changed to get Fig b)
 #' @param ytop = upper limit of y axis displayed
 #' @param M = meaningful effect boundary
-#' 
+#'
+
 FigS3 <- function(sample= 6,ytop=1,M=.64)
 {
   px=.01*(-200:200) #standardised effect sizes
@@ -663,10 +666,10 @@ FigS3 <- function(sample= 6,ytop=1,M=.64)
   par(xpd=F)
   # plot sampling distribution around M
   plot(px+M,yy,type="l",xlab="standardized effect size",xlim=c(-2,2+M),ylim=c(0,ytop),ylab=" ",bty="n")
-  
+
   # plot distribution of true effects in research scenario
   lines(px,dnorm(px,0,.5),lwd=2)
-  
+
   # plot error rates at alphas 0.025 and 0.0025
   ll=length(px+1)/2 # at zero
   cutoff1=qt(1-.025,2*sample-2) # critical value for test at 0.25
@@ -676,12 +679,12 @@ FigS3 <- function(sample= 6,ytop=1,M=.64)
    #type 2 errors occur for effect size greater than M
   lines(M-px[1:ll], pt(px[1:ll]*sqrt(sample/2)+cutoff1,2*sample-2),lty="dashed")
   lines(M-px[1:ll], pt(px[1:ll]*sqrt(sample/2)+cutoff2,2*sample-2),lty="dashed",lwd=.5)
-  
+
   # plot line at smallest meaningful
   lines(c(M,M),c(0,ytop),lwd=.5)
   #plot axes
   lines(c(-3,3),c(0,0),lwd=.5)
-  lines(c(-2,2),c(1,1),lwd=.5) 
+  lines(c(-2,2),c(1,1),lwd=.5)
   #put legend outside boundary
   par(mar=c(5,5,5,5),xpd=T)
   legend(x="topright",inset=c(-.3,0),legend=c("true effect dist.","sampling dist.","Type I .025", "Type II .025", "Type II .0025"),
@@ -690,7 +693,7 @@ FigS3 <- function(sample= 6,ytop=1,M=.64)
 
 
 ###########################################
-#sample size calculation in section 3
+#' @description sample size calculation in section 3
 R1=.092
 R2=.044
 onetwo=707/40000
@@ -704,5 +707,96 @@ za=qnorm(.05,0,1);zb=qnorm(.2,0,1)
 ((za*nsd2+zb*nsd)/factor)^2
 
 pnorm((factor*sqrt(1000)+za*nsd2)/nsd)
+#####################################################
 
-    
+#' @description multilevelCI() is a function to depict multilevel CIs as shown in the Supplementary material S1
+#'   CIs corresponding to different test levels are drawn over each other, with the weakest tests (= shortest CIs)
+#'   shown with the thickest lines
+#' @param m is vector of test statistics from different measurements/interventions
+#' @param SE is vector of standard errors
+#' @param cp is vector of critical points for the multi-level tests
+#' @param transform is a monotonic invertible function to transform summary data back to original domain (e.g. exp). Default =identity
+#' @param levelName is vector of descriptions of the cps (e.g., the alpha levels to which they correspond)
+#' @param lab is name for the domain of the test statistics (or their transforms) in which the CIs are intervals
+#' @param ticklab is a vector of names for the different CIs/measurements/interventions
+#' @param horizontal is T if the CIs are depicted parallel to x-axis
+#' @param legendPos positions legend using standard R plot terms
+multilevelCI <- function(m,SE,cp,transform=identity,levelName =c("weak","medium","strong"),lab=NA,ticklab=c("A","B","C"),horizontal=T, legendPos=legendPos){
+  lm=length(m)
+  ord=order(cp,decreasing=T)
+  op=par(cex=.75)
+  # set plot limits
+  lim=c(min(transform(m-max(cp)*SE)),max(transform(m+max(cp)*SE)))
+ #draw empty plot
+  if (horizontal==T){plot(x=transform(m),y=1:lm,xlab=lab,ylab=NA,axes=F,xlim=lim,ylim=c(0,lm+1));oside=1;side=2}
+  else {plot(x=1:lm,y=transform(m),xlab=NA, ylab=lab, ylim=lim,xlim=c(0,lm+1),axes=F); side=1;oside=2}
+# add legend with names of test levels
+  legend(x=legendPos,legend=levelName, lwd=ord,bty="n",horiz=T)
+  # draw effect size axis
+  axis(side=oside,labels=NA, at=round(lim,2)); axis(side=oside)
+ # for CIs for each test result
+  for (i in 1:lm){mtext(ticklab, side=side, cex=.8,at=c(1,2,3),las=1)
+    y=c(i,i);yU=c(i-lm/30,i+lm/30);yL=yU
+    if(!horizontal){x=y;xU=yU;xL=yL}
+    for(alpha in 1:length(cp)){
+      l=transform(m[i]-cp[alpha]*SE[i]); u=transform(m[i]+cp[alpha]*SE[i])
+      if (horizontal) {x=c(u,l);xL=c(l,l);xU=c(u,u)}
+      else {y=c(u,l);yL=c(l,l);yU=c(u,u)}
+      lines(x=x,y=y,lwd=ord[alpha])
+      lines(xL,yL,lwd=ord[alpha])
+      lines(xU,yU,lwd=ord[alpha])
+
+    }}
+}
+###*************************************
+# call multilevelCI to draw Fig S1.1.
+multilevelCI(c(.3,.7,1),SE=(c(.15,.3,.3)),cp=c(2.861,2.093,1.729),levelName =c("alpha .10","alpha .05","alpha .005"),lab="effect size",ticklab=c("A","B","C"),horizontal=T,legendPos="topleft")
+lines(c(0,0),c(0,3),lty=2) # put dotted line at effect size 0
+
+########################################################################
+#' @description function boxPlotTable adds table of compact letter display of significant differences between groups to a box plot.
+#' Uses R function boxplot.
+#' The compact letter descriptions need to be obtained from a posthoc test such as Tukey HSD
+#' @param data data frame with group data in the columns, and column names = group names
+#' @param compactLetters matrix with rows that contain compact letter display for each group at that test level
+#' @param levelNames names for test levels e.g. "weak" or "alpha= .10"
+#' @param ylab name for domain in which the data lie eg."counts" or "mgs"
+#' 
+
+require(asd)
+boxPlotTable <- function(data,compactLetters=compactLetters,levelNames=levelNames,ylab=ylab){
+  names=colnames(compactLetters)
+  par(mar=c(5,5,5,1),xpd=T)
+  boxplot(values~group, data=data,ylab=ylab)
+  print(names)
+  textwidth=c(strwidth("test level"))
+  for ( i in 1:length(names)) {w=max(strwidth(names[i]),max(strwidth(compactLetters[,i])))
+  textwidth=c(textwidth, w)}
+  
+  ncol=length(names)+1
+  op=par(cex=.7)
+  legend("topleft",inset=c(.02,-.25),legend=c("test level",names),bty="n",ncol=ncol,xpd=T,text.width=textwidth)
+  for (i in 1: length(levelNames)){
+    legend("topleft",inset=c(.02,-.25+.05*i),legend=c(levelNames[i],compactLetters[i,]),text.font=3,bty="n",ncol=ncol,xpd=T,text.width=textwidth)
+  }
+}
+####********************************************************
+# setup to draw Fig S1.2. Data is from Vosteen et al, 2017 (their Fig 2f).
+# Get Tukey test results on this data
+rn=c( "medicago univ", "medicago native","pisum univ", "pisum native")
+dd=matrix(nrow=4,ncol=10)
+dd[1,]=c(2.03,1.62,3.15,1.14,3.08,2.06,0.19,1.25,0.06,0.4)
+dd[2,]=c(1.27,1.21,0.51,2.51,3.06,2.82,1.54,3.34,NA,NA)
+dd[3,]=c(1.25,3.52,4.2,3.37,2.98,3.44,3.79,3.02,3.83,1.5)
+dd[4,]=c(4.86,2.1,3.35,2.57,6.24,2.65,3.75,2.75,2.84,4.85)
+data<- data.frame(group = NA, each = NA, values =NA)
+for (j in 1:4) for (i in 1:10)data<-rbind(data,list(rn[j],10,(dd[j,i])))
+model <- aov(values~group, data=data)
+TukeyHSD(model)
+#manually compute compact letter display given p-values from Tukey tests
+compactLetters=matrix(nrow=3,ncol=4,data=c("BC","AB","A","C","A", "A","A","B", "A", "AB","AB","A"))
+colnames(compactLetters)=c(rn[2],rn[1],rn[4],rn[3]) # swap group names around to correspond to how R  boxplot orders the groups
+ylab="honeydew mgs"
+levelNames=c("0.05","0.01","0.001")
+boxPlotTable(data=data,compactLetters=compactLetters,levelNames=levelNames,ylab=ylab)
+
